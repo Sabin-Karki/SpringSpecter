@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: SecurityScanner-YAML-Test
+  security:
+    user:
+      password: password # <-- Vulnerability 1 (Weak Password)
+    csrf:
+      enabled: false     # <-- Vulnerability 2 (CSRF Disabled)
+
+server:
+  ssl:
+    enabled: false       # <-- Vulnerability 3 (SSL Disabled)
