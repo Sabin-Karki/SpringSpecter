@@ -2,6 +2,7 @@ package com.scanner.Scanner;
 
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.Properties;
 
 @Component // to tell spring to create instance of this class since this will be injected somewhere else
@@ -11,8 +12,8 @@ public class SSLCheck implements  SecurityRule {
     //Firstly  ?What is ssl ? it is simply a protocol to secure communicaiton occuring across network between sender and reciever ...and it encrypts the data travelled across this network
 
     @Override
-    public String execute(Properties properties){
-        String value = properties.getProperty("server.ssl.enabled");
+    public String execute(Map<String,String> properties){
+        String value = properties.get("server.ssl.enabled");
         if(value != null && value.equals("false")){
             return "VULNERABILITY FOUND : SSL ENCRYPTION IS DISABLED !";
         }else{
