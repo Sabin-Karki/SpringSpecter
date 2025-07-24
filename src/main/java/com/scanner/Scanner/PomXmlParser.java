@@ -39,7 +39,7 @@ public class PomXmlParser {
                     version = versionElementt.text();
                 }
                 String mapKey = "dependency." + groupId + ":" + artifactId;
-                flattenedPom.put("mapKey",version);
+                flattenedPom.put(mapKey,version);
             }
         }
 
