@@ -19,12 +19,17 @@ public class ScannerCLI implements CommandLineRunner {
     private final PropertiesFileParser propertiesFileParser;
     List<SecurityRule> securityRules;
     private final YamlFileParser yamlFileParser;
+    List<BuildRule> buildRule;
+    private final PomXmlParser xmlParser;
 
-    public ScannerCLI(ApplicationArguments arguments,PropertiesFileParser propertiesFileParser ,List<SecurityRule> securityRules,YamlFileParser yamlFileParser) {
+    public ScannerCLI(ApplicationArguments arguments,PropertiesFileParser propertiesFileParser ,List<SecurityRule> securityRules,YamlFileParser yamlFileParser,List<BuildRule> buildRule , PomXmlParser xmlParser)
+    {
         this.arguments = arguments;
         this.propertiesFileParser=propertiesFileParser;
         this.securityRules=securityRules;
         this.yamlFileParser=yamlFileParser;
+        this.buildRule=buildRule;
+        this.xmlParser=xmlParser;
     }
 
     @Override
@@ -48,12 +53,14 @@ public class ScannerCLI implements CommandLineRunner {
                     //then look for certain extension
                     //at the end use collector to terminate and append all in list !
                     List<Path> propertiesFiles = Files.walk(currentPath)
+                            .filter(path -> !path.toString().contains("/target/"))
                             .filter(Files::isRegularFile)
                             .filter(path->{
                                String fileName = path.getFileName().toString();
                                return fileName.equals("application.properties")
                                        || fileName.equals("application.yml")
-                                        || fileName.equals("application.yaml");
+                                        || fileName.equals("application.yaml")
+                                       || fileName.equals("pom.xml");
                             }) // using 1 filter to implement multiple logical OR
                             .collect(Collectors.toList());
                     if(propertiesFiles.isEmpty()){
@@ -64,40 +71,66 @@ public class ScannerCLI implements CommandLineRunner {
                             System.out.println(" ->  Found  file : " + file);
                             try {
                                 // Okay so we will need a variable to store the flattened config now of type map interface
-                                Map<String,String> flatConfig = new HashMap<>();
+                                Map<String, String> flatConfig = new HashMap<>();
                                 String fileName = file.getFileName().toString();
-                                if(fileName.endsWith(".properties")){
-                                    // okay inside the block ..now what..logically...now i know .if my file ends with .properties...
-                                    Properties parsedProperties = this.propertiesFileParser.parse(file);
 
-                                    // now loop through all the key in properties object and get the key but only the string ,since thats what will be in the final format
-                                    for(String key : parsedProperties.stringPropertyNames()){
-                                        flatConfig.put(key,parsedProperties.getProperty(key)); // the latter method here ofcourse is use to give value of the given key
-                                    }
-                                }else if(fileName.endsWith(".yml") || file.endsWith(".yaml")){
-                                 flatConfig = this.yamlFileParser.parse(file);
-                                }
+                                if (fileName.endsWith(".properties") || fileName.endsWith(".yml") || fileName.endsWith(".yaml")) {
 
-                                List<String> vulnerablities = new ArrayList<>(); // this lsit is created to hold content/vulnerablitie sof the file we jsut parsed a step above
-                                for(SecurityRule rule : this.securityRules){
-                                    String result = rule.execute(flatConfig);
-                                    if(result!=null){
-                                        vulnerablities.add(result);
+                                    if (fileName.endsWith(".properties")) {
+                                        // okay inside the block ..now what..logically...now i know .if my file ends with .properties...
+                                        Properties parsedProperties = this.propertiesFileParser.parse(file);
+                                        // now loop through all the key in properties object and get the key but only the string ,since thats what will be in the final format
+                                        for (String key : parsedProperties.stringPropertyNames()) {
+                                            flatConfig.put(key, parsedProperties.getProperty(key)); // the latter method here ofcourse is use to give value of the given key
+                                        }
+                                    } else {
+                                        flatConfig = this.yamlFileParser.parse(file);
+                                    }
+
+                                    // this lsit is created to hold content/vulnerablitie sof the file we jsut parsed a step above
+                                    List<String> vulnerablities = new ArrayList<>();
+                                    for (SecurityRule rule : this.securityRules) {
+                                        String result = rule.execute(flatConfig);
+                                        if (result != null) {
+                                            vulnerablities.add(result);
+                                        }
+                                    }
+
+                                    //now after checking the rule
+                                    if (vulnerablities.isEmpty()) {
+                                        System.out.println(" [PASS] NO VULNERABLITIES DETECTED : " + file.getFileName());
+                                    } else {
+                                        System.err.println(" [FAIL] VULNERABILTIIES DETECTED :  " + file.getFileName());
+                                        for (String vulnerability : vulnerablities) {
+                                            System.err.println(" - " + vulnerability);
+                                        }
+                                    }
+
+                                } else if (fileName.equals("pom.xml")) {
+
+                                    flatConfig = this.xmlParser.parsePom(file);
+
+                                    List<String> pomVulnerabilities = new ArrayList<>();
+                                    for (BuildRule rule : this.buildRule) {
+                                        String result = rule.execute(flatConfig);
+                                        if (result != null) {
+                                            pomVulnerabilities.add(result);
+                                        }
+                                    }
+
+                                    if (pomVulnerabilities.isEmpty()) {
+                                        System.out.println(" [PASS] NO VULNERABILITIES DETECTED : " + file.getFileName());
+                                    } else {
+                                        System.err.println("[FAIL] VULNERABILITIES DETECTED : " + file.getFileName());
+                                        for (String vunerability : pomVulnerabilities) {
+                                            System.err.println(" error " + vunerability);
+                                        }
                                     }
                                 }
-                                //now after checking the rule
-                                if(vulnerablities.isEmpty()){
-                                    System.out.println(" [PASS] NO VULNERABLITIES DETECTED : "+file.getFileName());
-                                }else{
-                                    System.err.println(" [FAIL] VULNERABILTIIES DETECTED :  " + file.getFileName());
-                                    for(String vulnerability : vulnerablities){
-                                        System.err.println("  " + vulnerability);
-                                    }
-                                }
-                            }catch(IOException e){
-                                System.out.println("Can not parse the file" + e.getMessage());
+                            } catch (Exception e) {
+                                System.err.println("Can not process the file " + file.getFileName() + ": " + e.getMessage());
+                                e.printStackTrace(); // This is very helpful for debugging parser errors.
                             }
-
                     }
 
                 }}catch(IOException e){
