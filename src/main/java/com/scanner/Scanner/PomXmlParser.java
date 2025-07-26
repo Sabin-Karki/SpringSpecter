@@ -25,7 +25,6 @@ public class PomXmlParser {
             Element versionElement = doc.selectFirst("parent > version"); //"In the whole document, find the first <parent> tag. Immediately inside it, find a <version> tag. Then give me the text content of that <version> tag. btw using element returns the entire XML strucutre type text ,not just the text
             if (versionElement != null) {
                 String parentVersion = versionElement.text(); // this actualy gets the text content
-                System.out.println(" VERSION : " + parentVersion);
                 flattenedPom.put("parent.version", parentVersion);
             }
             Elements dependencyElement = doc.select("dependencies > dependency"); //An Elements object is essentially a List of Element objects. You can loop through it with a standard for-each loop.
