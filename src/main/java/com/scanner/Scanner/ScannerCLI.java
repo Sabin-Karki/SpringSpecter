@@ -21,15 +21,16 @@ public class ScannerCLI implements CommandLineRunner {
     private final YamlFileParser yamlFileParser;
     List<BuildRule> buildRule;
     private final PomXmlParser xmlParser;
+    private final ConsoleReporter consoleReporter;
 
-    public ScannerCLI(ApplicationArguments arguments,PropertiesFileParser propertiesFileParser ,List<SecurityRule> securityRules,YamlFileParser yamlFileParser,List<BuildRule> buildRule , PomXmlParser xmlParser)
-    {
+    public ScannerCLI(ApplicationArguments arguments,PropertiesFileParser propertiesFileParser ,List<SecurityRule> securityRules,YamlFileParser yamlFileParser,List<BuildRule> buildRule , PomXmlParser xmlParser , ConsoleReporter consoleReporter) {
         this.arguments = arguments;
         this.propertiesFileParser=propertiesFileParser;
         this.securityRules=securityRules;
         this.yamlFileParser=yamlFileParser;
         this.buildRule=buildRule;
         this.xmlParser=xmlParser;
+        this.consoleReporter=consoleReporter;
     }
 
     @Override
@@ -98,9 +99,9 @@ public class ScannerCLI implements CommandLineRunner {
 
                                     //now after checking the rule
                                     if (vulnerablities.isEmpty()) {
-                                        System.out.println(" [PASS] NO VULNERABLITIES DETECTED : " + file.getFileName());
+                                        this.consoleReporter.printPass(file, "NO VULNERABLITIES DETECTED : ");
                                     } else {
-                                        System.err.println(" [FAIL] VULNERABILTIIES DETECTED :  " + file.getFileName());
+                                        this.consoleReporter.printReport(file,vulnerablities   );
                                         for (String vulnerability : vulnerablities) {
                                             System.err.println(" - " + vulnerability);
                                         }
@@ -119,12 +120,9 @@ public class ScannerCLI implements CommandLineRunner {
                                     }
 
                                     if (pomVulnerabilities.isEmpty()) {
-                                        System.out.println(" [PASS] NO VULNERABILITIES DETECTED : " + file.getFileName());
+                                        this.consoleReporter.printPass(file, "  NO VULNERABILITIES DETECTED : " );
                                     } else {
-                                        System.err.println("[FAIL] VULNERABILITIES DETECTED : " + file.getFileName());
-                                        for (String vunerability : pomVulnerabilities) {
-                                            System.err.println(" error " + vunerability);
-                                        }
+                                        this.consoleReporter.printReport(file,pomVulnerabilities);
                                     }
                                 }
                             } catch (Exception e) {
