@@ -69,7 +69,7 @@ public class ScannerCLI implements CommandLineRunner {
                     }else{
 
                         for(Path file : propertiesFiles){
-                            System.out.println(" ->  Found  file : " + file);
+                           this.consoleReporter.printPass(file, " : Found File !");
                             try {
                                 // Okay so we will need a variable to store the flattened config now of type map interface
                                 Map<String, String> flatConfig = new HashMap<>();
@@ -102,13 +102,9 @@ public class ScannerCLI implements CommandLineRunner {
                                         this.consoleReporter.printPass(file, "NO VULNERABLITIES DETECTED : ");
                                     } else {
                                         this.consoleReporter.printReport(file,vulnerablities   );
-                                        for (String vulnerability : vulnerablities) {
-                                            System.err.println(" - " + vulnerability);
-                                        }
                                     }
 
                                 } else if (fileName.equals("pom.xml")) {
-
                                     flatConfig = this.xmlParser.parsePom(file);
 
                                     List<String> pomVulnerabilities = new ArrayList<>();
@@ -134,8 +130,6 @@ public class ScannerCLI implements CommandLineRunner {
                 }}catch(IOException e){
                     System.err.println("Exception thrown" + e.getMessage());
                 }
-
-                    System.out.println(" Scanning Directory :  " + projectPath);
                 } else {
                     System.err.println("Project path exist but it is not a directory");
                 }
